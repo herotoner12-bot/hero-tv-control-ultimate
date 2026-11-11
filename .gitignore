@@ -1,0 +1,12 @@
+*.iml
+.gradle/
+local.properties
+.idea/
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+legacy-termux/node_modules/
+legacy-termux/server.log
+*.jks
+*.keystore

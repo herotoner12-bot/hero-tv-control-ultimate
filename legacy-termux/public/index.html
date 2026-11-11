@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HERO TV CONTROL</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#10131c;color:white;font-family:Arial;text-align:center;padding:22px}
+h1{color:#55b8ff;margin-bottom:5px}
+p{color:#aaa}
+.panel{max-width:380px;margin:25px auto;background:#1c2230;padding:22px;border-radius:22px}
+button{border:0;border-radius:15px;background:#303b50;color:white;font-size:22px;padding:17px;min-width:75px;cursor:pointer}
+button:active{background:#1689df}
+.dpad{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;max-width:280px;margin:20px auto}
+.actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:20px}
+.small{font-size:16px}
+#status{margin-top:20px;color:#62d99a;font-size:14px}
+</style>
+</head>
+<body>
+<h1>HERO TV CONTROL</h1>
+<p>لوحة التحكم بالتلفزيون عبر Wi-Fi</p>
+<div class="panel">
+<h3>التنقل</h3>
+<div class="dpad">
+<div></div><button onclick="send('up')">▲</button><div></div>
+<button onclick="send('left')">◀</button>
+<button onclick="send('select')">OK</button>
+<button onclick="send('right')">▶</button>
+<div></div><button onclick="send('down')">▼</button><div></div>
+</div>
+<div class="actions">
+<button class="small" onclick="send('back')">رجوع</button>
+<button class="small" onclick="send('home')">الرئيسية</button>
+<button class="small" onclick="send('menu')">القائمة</button>
+</div>
+<hr style="border-color:#394254;margin:24px 0">
+<h3>الصوت</h3>
+<div class="actions">
+<button onclick="send('volume_up')">＋</button>
+<button onclick="send('mute')">كتم</button>
+<button onclick="send('volume_down')">－</button>
+</div>
+<h3>التشغيل</h3>
+<div class="actions">
+<button class="small" onclick="send('play_pause')">تشغيل / إيقاف مؤقت</button>
+</div>
+<div id="status">جاهز للتحكم</div>
+</div>
+<script>
+async function send(command){
+ const status=document.getElementById('status');
+ status.textContent='جارٍ إرسال الأمر...';
+ try{
+  const r=await fetch('/command',{
+   method:'POST',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({command})
+  });
+  const data=await r.json();
+  status.textContent=data.success?'تم تنفيذ الأمر ✓':'تعذر تنفيذ الأمر';
+ }catch(e){
+  status.textContent='تعذر الاتصال بالسيرفر';
+ }
+}
+</script>
+</body>
+</html>

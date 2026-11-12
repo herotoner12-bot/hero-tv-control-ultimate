@@ -1,9 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Phase 3+ will add INTERNET / ACCESS_WIFI_STATE / FOREGROUND_SERVICE etc. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Android 16+: وصول الشبكة المحلية (يُتجاهل على الإصدارات التي لا تعرفه). الاتصال بالتلفزيون محلي فقط. -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES"
+        android:usesPermissionFlags="neverForLocation"
+        tools:targetApi="33" />
 
     <application
+        android:name=".HeroTvApp"
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -14,7 +24,8 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
-            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden|keyboard|density"
+            android:windowSoftInputMode="adjustResize"
             android:theme="@style/Theme.HeroTV">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

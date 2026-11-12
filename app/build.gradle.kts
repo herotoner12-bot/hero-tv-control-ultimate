@@ -14,8 +14,20 @@ android {
         applicationId = "com.herotoner.herotv"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
+    }
+
+    packaging {
+        resources {
+            excludes += setOf(
+                "META-INF/versions/**",
+                "META-INF/DEPENDENCIES",
+                "META-INF/LICENSE*",
+                "META-INF/NOTICE*",
+                "META-INF/*.kotlin_module"
+            )
+        }
     }
 
     buildTypes {
@@ -50,4 +62,10 @@ dependencies {
     implementation("androidx.compose.animation:animation")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+
+    // ADB عبر Wi-Fi: مكتبة libadb (مصدر محلي) + Conscrypt لـ TLS 1.3 دون الاعتماد على واجهات مخفية
+    implementation(project(":libadb"))
+    implementation("org.conscrypt:conscrypt-android:2.5.3")
 }

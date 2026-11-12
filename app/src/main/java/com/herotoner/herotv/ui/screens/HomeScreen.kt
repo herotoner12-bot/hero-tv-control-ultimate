@@ -45,10 +45,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.herotoner.herotv.adb.SavedTv
 import com.herotoner.herotv.model.ConnectionState
 import com.herotoner.herotv.ui.Screen
+import com.herotoner.herotv.ui.components.ButtonKind
 import com.herotoner.herotv.ui.components.ConnectionChip
+import com.herotoner.herotv.ui.components.HeroButton
 import com.herotoner.herotv.ui.components.HeroLogo
+import com.herotoner.herotv.ui.components.InfoRow
+import com.herotoner.herotv.ui.components.SectionCard
+import com.herotoner.herotv.ui.components.connectionColor
+import com.herotoner.herotv.ui.components.connectionLabel
 import com.herotoner.herotv.ui.theme.HeroColors
 
 private data class HomeTile(
@@ -72,7 +79,11 @@ private val tiles = listOf(
 @Composable
 fun HomeScreen(
     connection: ConnectionState,
-    onNavigate: (Screen) -> Unit
+    devices: List<SavedTv>,
+    onNavigate: (Screen) -> Unit,
+    onConnect: (SavedTv) -> Unit,
+    onDisconnect: () -> Unit,
+    onRetry: () -> Unit
 ) {
     var showAbout by remember { mutableStateOf(false) }
 
@@ -93,6 +104,9 @@ fun HomeScreen(
         Banner()
         Spacer(Modifier.height(16.dp))
 
+        StatusCard(connection, devices, onNavigate, onDisconnect, onRetry)
+        Spacer(Modifier.height(16.dp))
+
         tiles.chunked(2).forEach { row ->
             Row(
                 Modifier.fillMaxWidth(),
@@ -109,9 +123,69 @@ fun HomeScreen(
             }
             Spacer(Modifier.height(12.dp))
         }
+
+        if (devices.isNotEmpty()) {
+            SectionCard("الأجهزة المحفوظة") {
+                devices.sortedByDescending { it.lastConnectedAt }.forEach { device ->
+                    val isCurrent = connection is ConnectionState.Connected &&
+                        connection.address == "${device.host}:${device.port}"
+                    InfoRow(
+                        title = device.name,
+                        subtitle = "${device.host}:${device.port}"
+                    ) {
+                        HeroButton(
+                            text = if (isCurrent) "متصل" else "اتصال",
+                            onClick = { onConnect(device) },
+                            enabled = !isCurrent && connection !is ConnectionState.Connecting
+                        )
+                    }
+                }
+            }
+            Spacer(Modifier.height(12.dp))
+        }
     }
 
     if (showAbout) AboutDialog(onDismiss = { showAbout = false })
+}
+
+@Composable
+private fun StatusCard(
+    connection: ConnectionState,
+    devices: List<SavedTv>,
+    onNavigate: (Screen) -> Unit,
+    onDisconnect: () -> Unit,
+    onRetry: () -> Unit
+) {
+    SectionCard("حالة التلفزيون") {
+        val detail = when (connection) {
+            is ConnectionState.Connected -> "العنوان: ${connection.address}"
+            is ConnectionState.Connecting -> "جارٍ الاتصال بالتلفزيون…"
+            is ConnectionState.Reconnecting -> "جارٍ محاولة الوصول إلى آخر تلفزيون متصل…"
+            is ConnectionState.Error -> connection.message
+            is ConnectionState.Disconnected ->
+                if (devices.isEmpty()) "لم تقترن بأي تلفزيون بعد." else "آخر تلفزيون: ${devices.maxByOrNull { it.lastConnectedAt }?.name}"
+        }
+        Text(connectionLabel(connection), color = connectionColor(connection), fontSize = 17.sp, fontWeight = FontWeight.Bold)
+        Text(detail, color = HeroColors.TextSecondary, fontSize = 13.sp)
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            when (connection) {
+                is ConnectionState.Connected -> {
+                    HeroButton("قطع الاتصال", onDisconnect, Modifier.weight(1f), ButtonKind.Secondary)
+                }
+                is ConnectionState.Connecting, is ConnectionState.Reconnecting -> {
+                    HeroButton("إيقاف المحاولة", onDisconnect, Modifier.weight(1f), ButtonKind.Secondary)
+                }
+                else -> {
+                    if (devices.isNotEmpty()) {
+                        HeroButton("إعادة الاتصال", onRetry, Modifier.weight(1f))
+                    } else {
+                        HeroButton("اقتران تلفزيون", { onNavigate(Screen.Pairing) }, Modifier.weight(1f))
+                    }
+                }
+            }
+            HeroButton("إدارة الأجهزة", { onNavigate(Screen.Pairing) }, Modifier.weight(1f), ButtonKind.Secondary)
+        }
+    }
 }
 
 @Composable
@@ -120,14 +194,14 @@ private fun Banner() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(130.dp)
+            .height(110.dp)
             .clip(shape)
             .background(Brush.linearGradient(listOf(HeroColors.BlueDeep, HeroColors.Black, HeroColors.PurpleDeep)))
             .border(1.dp, HeroColors.Outline, shape),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Icon(Icons.Filled.Tv, contentDescription = null, tint = HeroColors.BlueBright, modifier = Modifier.size(44.dp))
+            Icon(Icons.Filled.Tv, contentDescription = null, tint = HeroColors.BlueBright, modifier = Modifier.size(40.dp))
             Text(
                 text = "تحكم أذكى .. تجربة أفضل",
                 color = Color.White,
@@ -178,8 +252,9 @@ private fun AboutDialog(onDismiss: () -> Unit) {
         title = { Text("HERO TV CONTROL ULTIMATE") },
         text = {
             Text(
-                "الإصدار $version (قيد التطوير)\nتطوير: Hero Toner\n\n" +
-                    "التحكم بالتلفزيون عبر Wi-Fi محلياً فقط، دون إرسال أي بيانات إلى الإنترنت."
+                "الإصدار $version\nتطوير: Hero Toner\n\n" +
+                    "التحكم بالتلفزيون عبر Wi-Fi محلياً فقط، دون إرسال أي بيانات إلى الإنترنت. " +
+                    "مفتاح ADB محفوظ مشفّراً داخل Android Keystore."
             )
         },
         containerColor = HeroColors.Surface,
